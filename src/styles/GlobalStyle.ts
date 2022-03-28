@@ -5,8 +5,9 @@ const GlobalStyle = createGlobalStyle`
   ${reset};
 
   body{
-  color:${(props) => props.theme.white.darker};
-  background-color: black;
+    font-family: 'Do Hyeon', sans-serif;
+    color:${(props) => props.theme.white.darker};
+    background-color: black;
   }
   a{
     text-decoration:none;

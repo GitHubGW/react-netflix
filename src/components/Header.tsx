@@ -1,7 +1,12 @@
 import { useState } from "react";
-import { Link, useMatch, PathMatch } from "react-router-dom";
+import { Link, useMatch, PathMatch, useNavigate, NavigateFunction } from "react-router-dom";
 import styled from "styled-components";
 import { AnimationControls, motion, ScrollMotionValues, useAnimation, useViewportScroll, Variants } from "framer-motion";
+import { useForm } from "react-hook-form";
+
+interface FormData {
+  keyword: string;
+}
 
 const Container = styled(motion.nav)`
   display: flex;
@@ -16,6 +21,7 @@ const Container = styled(motion.nav)`
   padding: 20px 20px;
   color: white;
   box-sizing: border-box;
+  z-index: 500;
 `;
 
 const NavContainer = styled.div`
@@ -49,6 +55,7 @@ const Li = styled.li`
   display: flex;
   justify-content: center;
   flex-direction: column;
+  font-size: 18px;
 
   &:hover {
     color: ${(props) => props.theme.white.lighter};
@@ -67,7 +74,7 @@ const Circle = styled(motion.span)`
   background-color: ${(props) => props.theme.red};
 `;
 
-const SearchContainer = styled.div`
+const SearchForm = styled.form`
   display: flex;
   align-items: center;
 `;
@@ -100,12 +107,15 @@ const MotionSearchInput = styled(motion.input)`
 `;
 
 const Header = () => {
+  const navigate: NavigateFunction = useNavigate();
   const homePathMatch: PathMatch<string> | null = useMatch("/");
   const tvPathMatch: PathMatch<string> | null = useMatch("/tv");
+  const moviePathMatch: PathMatch<string> | null = useMatch("/movies/:id");
   const [isOpenSearch, setIsOpenSearch] = useState<boolean>(false);
   const inputAnimationControls: AnimationControls = useAnimation();
   const containerAnimationControls: AnimationControls = useAnimation();
   const { scrollYProgress }: ScrollMotionValues = useViewportScroll();
+  const { register, handleSubmit, getValues } = useForm<FormData>({ mode: "onChange" });
   const logoSvgVariants: Variants = {
     start: { fillOpacity: 0 },
     end: { fillOpacity: 1, transition: { duration: 0.5 } },
@@ -121,11 +131,16 @@ const Header = () => {
 
   scrollYProgress.onChange(() => {
     if (scrollYProgress.get() > 0.1) {
-      containerAnimationControls.start({ backgroundColor: "rgba(0,0,0,0)" });
+      containerAnimationControls.start({ backgroundColor: "rgba(0,0,0,1)" });
     } else {
       containerAnimationControls.start({ backgroundColor: "rgba(0,0,0,1)" });
     }
   });
+
+  const onValid = (): void => {
+    const { keyword } = getValues();
+    navigate(`/search?keyword=${keyword}`);
+  };
 
   const handleToggleSearchBar = (): void => {
     if (isOpenSearch === true) {
@@ -148,15 +163,23 @@ const Header = () => {
         </Link>
         <Ul>
           <Li>
-            <Link to="/">Home {homePathMatch && <Circle layoutId="circle" />}</Link>
+            <Link to="/">홈 {(homePathMatch || moviePathMatch) && <Circle layoutId="circle" />}</Link>
           </Li>
           <Li>
             <Link to="/tv">TV {tvPathMatch && <Circle layoutId="circle" />}</Link>
           </Li>
         </Ul>
       </NavContainer>
-      <SearchContainer>
-        <MotionSearchInput variants={searchInputVariants} initial="start" animate={inputAnimationControls} type="text" placeholder="영화, TV 등을 검색해보세요." />
+      <SearchForm onSubmit={handleSubmit(onValid)}>
+        <MotionSearchInput
+          {...register("keyword", { required: "키워드를 입력해주세요.", minLength: 1 })}
+          minLength={1}
+          variants={searchInputVariants}
+          initial="start"
+          animate={inputAnimationControls}
+          type="text"
+          placeholder="영화, TV 등을 검색해보세요."
+        />
         <SearchButton type="button">
           <MotionSearchSvg onClick={handleToggleSearchBar} variants={searchSvgVariants} initial="start" animate="end" viewBox="0 0 512 512">
             <MotionSearchPath
@@ -165,7 +188,7 @@ const Header = () => {
             />
           </MotionSearchSvg>
         </SearchButton>
-      </SearchContainer>
+      </SearchForm>
     </Container>
   );
 };
